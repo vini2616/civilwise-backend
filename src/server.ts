@@ -40,15 +40,20 @@ const app: Application = express();
 
 // Middleware
 app.use(helmet());
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+app.use(express.json({ limit: '50mb', type: 'application/json' }));
 
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
     max: 10000, // Increased limit for development
 });
-app.use(limiter);
+app.use('/api/auth', limiter);
 
 // Routes
 app.use('/api/auth', authRoutes);

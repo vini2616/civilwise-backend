@@ -8,3 +8,17 @@
   "username": "coffin",
   "siteId": "69579196beeef60b7c4fd3ec"
 }
+2026-01-13T05:15:58.592Z - createUser called
+{
+  "name": "test",
+  "mobile": "9999999999",
+  "role": "Engineer",
+  "salary": "0",
+  "username": "test",
+  "password": "1234",
+  "permission": "data_entry",
+  "modulePermissions": {},
+  "email": "test@vini.app",
+  "companyId": "6957905dbeeef60b7c4fcc5c",
+  "siteId": "6957905dbeeef60b7c4fcc5f"
+}
