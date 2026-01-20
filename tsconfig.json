@@ -9,12 +9,7 @@
     "noImplicitAny": false,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "typeRoots": [
-      "./node_modules/@types"
-    ],
-    "types": [
-      "node"
-    ],
+    "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
     "forceConsistentCasingInFileNames": false
   },
