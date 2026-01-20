@@ -9,9 +9,6 @@
     "noImplicitAny": false,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "types": [
-      "node"
-    ],
     "moduleResolution": "node",
     "forceConsistentCasingInFileNames": false
   },
