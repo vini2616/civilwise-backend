@@ -127,6 +127,10 @@ var UserSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company'
     },
+    companies: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'Company'
+        }],
     createdAt: {
         type: Date,
         default: Date.now,

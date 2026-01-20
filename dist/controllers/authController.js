@@ -142,44 +142,91 @@ exports.loginUser = loginUser;
 // @desc    Create a new user (Admin/Owner/Partner only)
 // @route   POST /api/auth/create-user
 // @access  Private (Owner, Admin, Partner)
+// DEBUG LOGGING
+var fs = require('fs');
+var logDebug = function (msg, data) {
+    try {
+        fs.appendFileSync('server_debug.log', "".concat(new Date().toISOString(), " - ").concat(msg, "\n").concat(data ? JSON.stringify(data, null, 2) + '\n' : ''));
+    }
+    catch (e) {
+        console.error('Log failed', e);
+    }
+};
 var createUser = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var requestingUser, _a, name_1, email, username, password, role, permissions, permission, modulePermissions, siteId, companyId, mobile, salary, userExists, user, error_1;
+    var requestingUser, _a, name_1, email, username, password, role, permissions, permission, modulePermissions, siteId, companyId_1, mobile, salary, userExists_1, existingCompanyIds, user, error_1;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                _b.trys.push([0, 3, , 4]);
+                _b.trys.push([0, 6, , 7]);
+                logDebug('createUser called', req.body);
                 requestingUser = req.user;
                 if (!['Owner', 'Admin', 'Partner'].includes(requestingUser.role) && requestingUser.permission !== 'full_control') {
                     res.status(403).json({ message: 'Not authorized to create users' });
                     return [2 /*return*/];
                 }
-                _a = req.body, name_1 = _a.name, email = _a.email, username = _a.username, password = _a.password, role = _a.role, permissions = _a.permissions, permission = _a.permission, modulePermissions = _a.modulePermissions, siteId = _a.siteId, companyId = _a.companyId, mobile = _a.mobile, salary = _a.salary;
+                _a = req.body, name_1 = _a.name, email = _a.email, username = _a.username, password = _a.password, role = _a.role, permissions = _a.permissions, permission = _a.permission, modulePermissions = _a.modulePermissions, siteId = _a.siteId, companyId_1 = _a.companyId, mobile = _a.mobile, salary = _a.salary;
                 if (!name_1 || !email || !username || !password) {
                     res.status(400).json({ message: 'Please add all fields' });
                     return [2 /*return*/];
                 }
                 return [4 /*yield*/, User_1.default.findOne({ $or: [{ email: email }, { username: username }] })];
             case 1:
-                userExists = _b.sent();
-                if (userExists) {
-                    res.status(400).json({ message: 'User already exists' });
+                userExists_1 = _b.sent();
+                if (!userExists_1) return [3 /*break*/, 4];
+                existingCompanyIds = userExists_1.companies || (userExists_1.companyId ? [userExists_1.companyId] : []);
+                // @ts-ignore
+                if (companyId_1 && existingCompanyIds.some(function (id) { return id.toString() === companyId_1.toString(); })) {
+                    res.status(400).json({ message: 'User already exists in this company' });
                     return [2 /*return*/];
                 }
-                return [4 /*yield*/, User_1.default.create({
-                        name: name_1,
-                        email: email,
-                        username: username,
-                        passwordHash: password,
-                        role: role || 'User',
-                        mobile: mobile || '',
-                        salary: salary || 0,
-                        permissions: permissions || [],
-                        permission: permission || 'view_edit',
-                        modulePermissions: modulePermissions || {},
-                        sites: (siteId && /^[0-9a-fA-F]{24}$/.test(siteId)) ? [siteId] : [],
-                        companyId: companyId || null
-                    })];
+                if (!companyId_1) return [3 /*break*/, 3];
+                // @ts-ignore
+                if (!userExists_1.companies)
+                    userExists_1.companies = [];
+                // @ts-ignore
+                if (userExists_1.companyId) {
+                    // Ensure primary is also in list
+                    // @ts-ignore
+                    if (!userExists_1.companies.some(function (id) { return id.toString() === userExists_1.companyId.toString(); })) {
+                        // @ts-ignore
+                        userExists_1.companies.push(userExists_1.companyId);
+                    }
+                }
+                // @ts-ignore
+                userExists_1.companies.push(companyId_1);
+                return [4 /*yield*/, userExists_1.save()];
             case 2:
+                _b.sent();
+                res.status(200).json({
+                    message: 'User added to company successfully',
+                    _id: userExists_1._id,
+                    name: userExists_1.name,
+                    email: userExists_1.email,
+                    username: userExists_1.username,
+                    role: userExists_1.role,
+                    // @ts-ignore
+                    companies: userExists_1.companies
+                });
+                return [2 /*return*/];
+            case 3:
+                res.status(400).json({ message: 'User already exists' });
+                return [2 /*return*/];
+            case 4: return [4 /*yield*/, User_1.default.create({
+                    name: name_1,
+                    email: email,
+                    username: username,
+                    passwordHash: password,
+                    role: role || 'User',
+                    mobile: mobile || '',
+                    salary: salary || 0,
+                    permissions: permissions || [],
+                    permission: permission || 'view_edit',
+                    modulePermissions: modulePermissions || {},
+                    sites: (siteId && /^[0-9a-fA-F]{24}$/.test(siteId)) ? [siteId] : [],
+                    companyId: companyId_1 || null,
+                    companies: companyId_1 ? [companyId_1] : []
+                })];
+            case 5:
                 user = _b.sent();
                 if (user) {
                     res.status(201).json({
@@ -192,18 +239,19 @@ var createUser = function (req, res) { return __awaiter(void 0, void 0, void 0, 
                         permission: user.permission,
                         modulePermissions: user.modulePermissions,
                         sites: user.sites,
-                        companyId: user.companyId
+                        companyId: user.companyId,
+                        companies: user.companies
                     });
                 }
                 else {
                     res.status(400).json({ message: 'Invalid user data' });
                 }
-                return [3 /*break*/, 4];
-            case 3:
+                return [3 /*break*/, 7];
+            case 6:
                 error_1 = _b.sent();
                 res.status(500).json({ message: 'Server Error', error: error_1.message });
-                return [3 /*break*/, 4];
-            case 4: return [2 /*return*/];
+                return [3 /*break*/, 7];
+            case 7: return [2 /*return*/];
         }
     });
 }); };
@@ -212,21 +260,21 @@ exports.createUser = createUser;
 // @route   GET /api/auth/users
 // @access  Private
 var getUsers = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var user, _a, siteId, companyId_1, query, targetCompany, ownedCompanies, ownedCompanyIds, users, error_2;
+    var user, _a, siteId, companyId_2, query, targetCompany, ownedCompanies, ownedCompanyIds, users, error_2;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 _b.trys.push([0, 7, , 8]);
                 user = req.user;
-                _a = req.query, siteId = _a.siteId, companyId_1 = _a.companyId;
+                _a = req.query, siteId = _a.siteId, companyId_2 = _a.companyId;
                 console.log("getUsers Request - Query:", req.query);
                 console.log("getUsers Request - User Role:", user.role);
                 console.log("getUsers Request - User Company:", user.companyId);
                 query = {};
-                if (!companyId_1) return [3 /*break*/, 5];
-                if (!(user.companyId && user.companyId.toString() !== companyId_1.toString())) return [3 /*break*/, 2];
+                if (!companyId_2) return [3 /*break*/, 5];
+                if (!(user.companyId && user.companyId.toString() !== companyId_2.toString())) return [3 /*break*/, 2];
                 if (!(user.permission !== 'full_control')) return [3 /*break*/, 2];
-                return [4 /*yield*/, Company_1.default.findById(companyId_1)];
+                return [4 /*yield*/, Company_1.default.findById(companyId_2)];
             case 1:
                 targetCompany = _b.sent();
                 // @ts-ignore
@@ -242,9 +290,9 @@ var getUsers = function (req, res) { return __awaiter(void 0, void 0, void 0, fu
                 ownedCompanies = _b.sent();
                 ownedCompanyIds = ownedCompanies.map(function (c) { return c._id; });
                 // Include the requested companyId in the list if not already there (though it should be)
-                if (!ownedCompanyIds.some(function (id) { return id.toString() === companyId_1.toString(); })) {
+                if (!ownedCompanyIds.some(function (id) { return id.toString() === companyId_2.toString(); })) {
                     // @ts-ignore
-                    ownedCompanyIds.push(companyId_1);
+                    ownedCompanyIds.push(companyId_2);
                 }
                 query.$or = [
                     { companyId: { $in: ownedCompanyIds } },
@@ -255,7 +303,7 @@ var getUsers = function (req, res) { return __awaiter(void 0, void 0, void 0, fu
             case 4:
                 // Regular users: strict company filter + unassigned
                 query.$or = [
-                    { companyId: companyId_1 },
+                    { companyId: companyId_2 },
                     { companyId: null },
                     { companyId: { $exists: false } }
                 ];
@@ -318,11 +366,12 @@ exports.getUsers = getUsers;
 // @route   POST /api/auth/assign-site
 // @access  Private (Owner, Admin, Partner)
 var assignUserToSite = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var requestingUser, _a, username, siteId, user, site, error_3;
+    var requestingUser, _a, username, siteId, user, site, companyIdStr, existingCompanyIds, error_3;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 _b.trys.push([0, 4, , 5]);
+                logDebug('assignUserToSite called', req.body);
                 requestingUser = req.user;
                 if (!['Owner', 'Admin', 'Partner'].includes(requestingUser.role) && requestingUser.permission !== 'full_control') {
                     res.status(403).json({ message: 'Not authorized' });
@@ -359,8 +408,21 @@ var assignUserToSite = function (req, res) { return __awaiter(void 0, void 0, vo
                     // @ts-ignore
                     user.companyId = site.companyId;
                 }
+                // Ensure user is associated with the company of the site
                 // @ts-ignore
-                user.sites.push(siteId);
+                if (!user.companies)
+                    user.companies = [];
+                companyIdStr = site.companyId.toString();
+                existingCompanyIds = user.companies.map(function (c) { return c.toString(); });
+                if (!existingCompanyIds.includes(companyIdStr)) {
+                    // @ts-ignore
+                    user.companies.push(site.companyId);
+                }
+                // @ts-ignore
+                if (!user.sites.includes(siteId)) {
+                    // @ts-ignore
+                    user.sites.push(siteId);
+                }
                 return [4 /*yield*/, user.save()];
             case 3:
                 _b.sent();

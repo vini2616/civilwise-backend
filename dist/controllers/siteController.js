@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.restoreSiteFromTrash = exports.getDeletedSites = exports.restoreSite = exports.deleteSite = exports.createSite = exports.getSites = void 0;
+exports.restoreSiteFromTrash = exports.getDeletedSites = exports.restoreSite = exports.deleteSite = exports.updateSite = exports.createSite = exports.getSites = void 0;
 var Site_1 = __importDefault(require("../models/Site"));
 var accessControl_1 = require("../utils/accessControl");
 var archiveService_1 = require("../services/archiveService");
@@ -108,8 +108,48 @@ var createSite = function (req, res) { return __awaiter(void 0, void 0, void 0, 
     });
 }); };
 exports.createSite = createSite;
+var updateSite = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var id, _a, name_2, address, status_2, user, site, updatedSite, error_3;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
+            case 0:
+                _b.trys.push([0, 5, , 6]);
+                id = req.params.id;
+                _a = req.body, name_2 = _a.name, address = _a.address, status_2 = _a.status;
+                user = req.user;
+                // Check permissions
+                if (user.role !== 'Owner' && user.role !== 'Admin' && user.role !== 'Partner' && user.permission !== 'full_control') {
+                    res.status(401).json({ message: 'Not authorized' });
+                    return [2 /*return*/];
+                }
+                return [4 /*yield*/, Site_1.default.findById(id)];
+            case 1:
+                site = _b.sent();
+                if (!site) return [3 /*break*/, 3];
+                site.name = name_2 || site.name;
+                site.address = address || site.address;
+                site.status = status_2 || site.status;
+                return [4 /*yield*/, site.save()];
+            case 2:
+                updatedSite = _b.sent();
+                res.json(updatedSite);
+                return [3 /*break*/, 4];
+            case 3:
+                res.status(404).json({ message: 'Site not found' });
+                _b.label = 4;
+            case 4: return [3 /*break*/, 6];
+            case 5:
+                error_3 = _b.sent();
+                console.error("Error in updateSite:", error_3);
+                res.status(500).json({ message: 'Server Error' });
+                return [3 /*break*/, 6];
+            case 6: return [2 /*return*/];
+        }
+    });
+}); };
+exports.updateSite = updateSite;
 var deleteSite = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var site, user, archive, error_3;
+    var site, user, archive, error_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -144,8 +184,8 @@ var deleteSite = function (req, res) { return __awaiter(void 0, void 0, void 0, 
                 _a.label = 7;
             case 7: return [3 /*break*/, 9];
             case 8:
-                error_3 = _a.sent();
-                console.error("Error in deleteSite:", error_3);
+                error_4 = _a.sent();
+                console.error("Error in deleteSite:", error_4);
                 if (!res.headersSent)
                     res.status(500).json({ message: 'Server Error' });
                 return [3 /*break*/, 9];
@@ -157,7 +197,7 @@ exports.deleteSite = deleteSite;
 exports.restoreSite = [
     upload.single('backup'),
     function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var results, error_4;
+        var results, error_5;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -172,9 +212,9 @@ exports.restoreSite = [
                     res.json({ message: 'Restore successful', results: results });
                     return [3 /*break*/, 3];
                 case 2:
-                    error_4 = _a.sent();
-                    console.error("Restore Error:", error_4);
-                    res.status(500).json({ message: 'Restore failed', error: error_4.message });
+                    error_5 = _a.sent();
+                    console.error("Restore Error:", error_5);
+                    res.status(500).json({ message: 'Restore failed', error: error_5.message });
                     return [3 /*break*/, 3];
                 case 3: return [2 /*return*/];
             }
@@ -182,7 +222,7 @@ exports.restoreSite = [
     }); }
 ];
 var getDeletedSites = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var user, companyId, query, sites, error_5;
+    var user, companyId, query, sites, error_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -205,8 +245,8 @@ var getDeletedSites = function (req, res) { return __awaiter(void 0, void 0, voi
                 res.json(sites);
                 return [3 /*break*/, 3];
             case 2:
-                error_5 = _a.sent();
-                console.error(error_5);
+                error_6 = _a.sent();
+                console.error(error_6);
                 res.status(500).json({ message: 'Server Error' });
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -215,7 +255,7 @@ var getDeletedSites = function (req, res) { return __awaiter(void 0, void 0, voi
 }); };
 exports.getDeletedSites = getDeletedSites;
 var restoreSiteFromTrash = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var id, user, site, error_6;
+    var id, user, site, error_7;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -240,8 +280,8 @@ var restoreSiteFromTrash = function (req, res) { return __awaiter(void 0, void 0
                 res.json({ message: 'Site restored successfully', site: site });
                 return [3 /*break*/, 4];
             case 3:
-                error_6 = _a.sent();
-                console.error("Error in restoreSiteFromTrash:", error_6);
+                error_7 = _a.sent();
+                console.error("Error in restoreSiteFromTrash:", error_7);
                 res.status(500).json({ message: 'Server Error' });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];

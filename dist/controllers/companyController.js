@@ -39,35 +39,35 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.restoreCompany = exports.updateCompany = exports.deleteCompany = exports.createCompany = exports.getCompanies = void 0;
+exports.restoreCompanyFromTrash = exports.getDeletedCompanies = exports.restoreCompany = exports.updateCompany = exports.deleteCompany = exports.createCompany = exports.getCompanies = void 0;
 var Company_1 = __importDefault(require("../models/Company"));
 var archiveService_1 = require("../services/archiveService");
 var multer_1 = __importDefault(require("multer"));
 var upload = (0, multer_1.default)();
 var getCompanies = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var user, query, companies, error_1;
+    var user, query, companyIds, companies, error_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
                 user = req.user;
+                console.log("getCompanies User:", user.name, user._id);
+                console.log("User Companies:", user.companies);
+                console.log("User CompanyID:", user.companyId);
                 query = { ownerId: user._id, deletedAt: null };
                 // If user belongs to a company (employee), include that company too
-                if (user.companyId) {
-                    query.$or = [
-                        { ownerId: user._id },
-                        { _id: user.companyId }
-                    ];
-                    delete query.ownerId; // Remove the single ownerId check if using $or
-                    // Note: If using $or, we need deletedAt: null in both or applied globally.
-                    // Simplified:
+                if (user.companyId || (user.companies && user.companies.length > 0)) {
+                    companyIds = user.companies || [];
+                    if (user.companyId && !companyIds.includes(user.companyId)) {
+                        companyIds.push(user.companyId);
+                    }
                     query = {
                         $and: [
                             { deletedAt: null },
                             {
                                 $or: [
                                     { ownerId: user._id },
-                                    { _id: user.companyId }
+                                    { _id: { $in: companyIds } }
                                 ]
                             }
                         ]
@@ -249,3 +249,62 @@ exports.restoreCompany = [
         });
     }); }
 ];
+var getDeletedCompanies = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var user, companies, error_6;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                user = req.user;
+                return [4 /*yield*/, Company_1.default.find({
+                        ownerId: user._id,
+                        deletedAt: { $ne: null }
+                    })];
+            case 1:
+                companies = _a.sent();
+                res.json(companies);
+                return [3 /*break*/, 3];
+            case 2:
+                error_6 = _a.sent();
+                res.status(500).json({ message: 'Server Error' });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.getDeletedCompanies = getDeletedCompanies;
+var restoreCompanyFromTrash = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var company, error_7;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 7, , 8]);
+                return [4 /*yield*/, Company_1.default.findOne({ _id: req.params.id })];
+            case 1:
+                company = _a.sent();
+                if (!company) return [3 /*break*/, 5];
+                if (!(company.ownerId.toString() === req.user._id.toString())) return [3 /*break*/, 3];
+                company.deletedAt = undefined;
+                company.permanentDeleteAt = undefined;
+                return [4 /*yield*/, company.save()];
+            case 2:
+                _a.sent();
+                res.json(company);
+                return [3 /*break*/, 4];
+            case 3:
+                res.status(401).json({ message: 'Not authorized' });
+                _a.label = 4;
+            case 4: return [3 /*break*/, 6];
+            case 5:
+                res.status(404).json({ message: 'Company not found' });
+                _a.label = 6;
+            case 6: return [3 /*break*/, 8];
+            case 7:
+                error_7 = _a.sent();
+                res.status(500).json({ message: 'Server Error' });
+                return [3 /*break*/, 8];
+            case 8: return [2 /*return*/];
+        }
+    });
+}); };
+exports.restoreCompanyFromTrash = restoreCompanyFromTrash;

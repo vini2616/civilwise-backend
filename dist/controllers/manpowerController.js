@@ -81,7 +81,8 @@ var createResource = function (req, res) { return __awaiter(void 0, void 0, void
                 return [3 /*break*/, 3];
             case 2:
                 error_2 = _a.sent();
-                res.status(500).json({ message: 'Server Error' });
+                console.error("Create Resource Error:", error_2);
+                res.status(500).json({ message: error_2.message || 'Server Error' });
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
         }

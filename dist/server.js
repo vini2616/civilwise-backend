@@ -39,14 +39,18 @@ var cleanupService_1 = require("./services/cleanupService");
 var app = (0, express_1.default)();
 // Middleware
 app.use((0, helmet_1.default)());
-app.use((0, cors_1.default)());
-app.use(express_1.default.json({ limit: '50mb' }));
+app.use((0, cors_1.default)({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.use(express_1.default.json({ limit: '50mb', type: 'application/json' }));
 // Rate limiting
 var limiter = (0, express_rate_limit_1.default)({
     windowMs: 10 * 60 * 1000, // 10 minutes
     max: 10000, // Increased limit for development
 });
-app.use(limiter);
+app.use('/api/auth', limiter);
 // Routes
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api/notes', noteRoutes_1.default);
